@@ -54,11 +54,12 @@ def parse_file(name):
     f.close()
     return data
 
-parse_start = time.time()
-data = map(parse_file, glob.glob('a8-*'))
-parse_stop = time.time()
+def parse():
+    data = map(parse_file, glob.glob('a8-*'))
+    all_records = []
+    for datum in data:
+        all_records += datum
+    return all_records
 
-all_records = []
-for datum in data:
-    all_records += datum
-
+if __name__ == '__main__':
+    parse()
