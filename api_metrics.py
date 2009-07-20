@@ -4,7 +4,7 @@ import api_parse
 import api_analyze
 
 parse_start = time.time()
-data = api_parse.parse()
+data = api_parse.run()
 parse_stop = time.time()
 
 analysis_start = time.time()
