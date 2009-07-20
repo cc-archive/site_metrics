@@ -1,23 +1,37 @@
 
+g = {}
+
 def analyze(data):
-    paths, queries = {}, {}
+    analyze_paths(data)
+    analyze_queries(data)
+    foo()
+    report_analysis()
+
+def analyze_paths(data):
+    g['path'] = {}
     for record in data:
         path = record['parsed-request-url'].path
-        if paths.has_key(path):
-            paths[path] += 1
+        if g['path'].has_key(path):
+            g['path'][path] += 1
         else:
-            paths[path] = 1
+            g['path'][path] = 1
+
+    g['path']['items'] = g['path'].items()
+    g['path']['items'].sort(_item_sort, reverse=True)
+
+def analyze_queries(data):
+    g['query'] = {}
+    for record in data:
         query = record['parsed-request-url'].query
-        if queries.has_key(query):
-            queries[query] += 1
+        if g['query'].has_key(query):
+            g['query'][query] += 1
         else:
-            queries[query] = 1
+            g['query'][query] = 1
 
-    pitems = paths.items()
-    pitems.sort(lambda x,y: cmp(x[1],y[1]), reverse=True)
-    qitems = queries.items()
-    qitems.sort(lambda x,y: cmp(x[1],y[1]), reverse=True)
+    g['query']['items'] = g['query'].items()
+    g['query']['items'].sort(_item_sort, reverse=True)
 
+def foo():
     # parse out queries
     parsed_queries = [q['parsed-query'] for q in data
                   if q['parsed-query'] is not None]
@@ -49,12 +63,7 @@ def analyze(data):
     query_strings_num = len(parsed_queries)
     rest_paths_num = len(parsed_paths) # well-formed paths anyway
 
-    #for item in pitems:
-    #    print "%d - %s" % (item[1], item[0])
-    #print
-    #for item in qitems:
-    #    print "%d - %s" % (item[1], item[0])
-    #print
+def report_analysis():
     print "%d individual records" % records_num
     print "%d records with '/rest' paths (%.2f%%)" % (rest_paths_num,
                                     float(rest_paths_num*100) / records_num)
@@ -73,3 +82,6 @@ def analyze(data):
     for key, value in query_opt_items:
         print "  %s: %d (%.3f%%)" % (key, value, 
                                     float(value*100)/query_strings_num)
+
+def _item_sort(x,y):
+    return cmp(x[1],y[1])
