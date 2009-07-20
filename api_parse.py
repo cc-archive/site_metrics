@@ -1,6 +1,5 @@
 import glob
 from datetime import datetime
-import time
 import urlparse
 
 def parse_query(qstr):
