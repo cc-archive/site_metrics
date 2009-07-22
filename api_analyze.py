@@ -4,7 +4,8 @@ g = {}
 def analyze(data):
     analyze_paths(data)
     analyze_queries(data)
-    foo()
+    generate_tree(data)
+    foo(data)
     report_analysis()
 
 def analyze_paths(data):
@@ -31,7 +32,21 @@ def analyze_queries(data):
     g['query']['items'] = g['query'].items()
     g['query']['items'].sort(_item_sort, reverse=True)
 
-def foo():
+def generate_tree(data):
+    tree = {}
+    
+    paths = [p['parsed-request-url'].path for p in data
+                    if p['parsed-path'] is not None]
+
+    # validate paths
+    for path in paths:
+        pass
+
+    # 
+    
+    g['tree'] = tree
+
+def foo(data):
     # parse out queries
     parsed_queries = [q['parsed-query'] for q in data
                   if q['parsed-query'] is not None]
@@ -59,29 +74,31 @@ def foo():
                 path_option_counts[opt] += 1
 
     # clean up variables for reporting
-    records_num = len(data)
-    query_strings_num = len(parsed_queries)
-    rest_paths_num = len(parsed_paths) # well-formed paths anyway
+    g['records_num'] = len(data)
+    g['query_strings_num'] = len(parsed_queries)
+    g['query_strings_pct'] = float(g['query_strings_num']*100) / g['records_num']
+    g['rest_paths_num'] = len(parsed_paths) # well-formed paths anyway
+    g['rest_paths_pct'] = float(g['rest_paths_num']*100) / g['records_num']
 
 def report_analysis():
-    print "%d individual records" % records_num
-    print "%d records with '/rest' paths (%.2f%%)" % (rest_paths_num,
-                                    float(rest_paths_num*100) / records_num)
-    print "%d records with query strings (%.2f%%)" % (query_strings_num, 
-                                    float(query_strings_num*100) / records_num)
+    print "%d individual records" % g['records_num']
+    print "%d records with '/rest' paths (%.2f%%)" % (g['rest_paths_num'],
+                                    g['rest_paths_pct'])
+    print "%d records with query strings (%.2f%%)" % (g['query_strings_num'], 
+                                    g['query_strings_pct'])
     print
-    print "Breakdown by version:"
-    path_opt_items = path_option_counts.items()
-    path_opt_items.sort(lambda x,y: cmp(x[1],y[1]), reverse=True)
-    for key, value in path_opt_items:
-        print "  %s: %d (%.3f%%)" % (key, value, float(value*100) / rest_paths_num)
-    print
-    print "Option counts as follows (percents out of query string total):"
-    query_opt_items = query_option_counts.items()
-    query_opt_items.sort(lambda x,y: cmp(x[1],y[1]), reverse=True)
-    for key, value in query_opt_items:
-        print "  %s: %d (%.3f%%)" % (key, value, 
-                                    float(value*100)/query_strings_num)
+    #print "Breakdown by version:"
+    #path_opt_items = path_option_counts.items()
+    #path_opt_items.sort(lambda x,y: cmp(x[1],y[1]), reverse=True)
+    #for key, value in path_opt_items:
+    #    print "  %s: %d (%.3f%%)" % (key, value, float(value*100) / rest_paths_num)
+    #print
+    #print "Option counts as follows (percents out of query string total):"
+    #query_opt_items = query_option_counts.items()
+    #query_opt_items.sort(lambda x,y: cmp(x[1],y[1]), reverse=True)
+    #for key, value in query_opt_items:
+    #    print "  %s: %d (%.3f%%)" % (key, value, 
+    #                                float(value*100)/query_strings_num)
 
 def _item_sort(x,y):
     return cmp(x[1],y[1])
