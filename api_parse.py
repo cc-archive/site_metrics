@@ -58,7 +58,7 @@ def parse_file(name):
     return data
 
 def parse():
-    data = map(parse_file, glob.glob('a8-*'))
+    data = map(parse_file, ["a8-api.creativecommons.org-access.log-20081003"]) #glob.glob('a8-*'))
     all_records = []
     for datum in data:
         all_records += datum
