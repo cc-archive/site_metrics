@@ -18,8 +18,6 @@ def parse_query(qstr):
 def parse_path(pstr):
     pieces = pstr.split('/')
     assert pieces[0] == ''
-    if pieces[1] != 'rest':
-        return None
     # hack
     if len(pieces) < 3:
         return dict(version='None', call=['None'])
