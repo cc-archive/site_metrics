@@ -32,56 +32,7 @@ def analyze_queries(data):
     g['query']['items'] = g['query'].items()
     g['query']['items'].sort(_item_sort, reverse=True)
 
-def validate_paths(paths):    
-    _api = {'':None, 'locales':None,
-            'license':None, 'details':None,
-            'simple': {'chooser':None},
-            'support': {'jurisdictions':None},
-            }
-    validation = {
-        '' : {
-            'rest' :
-                    {'1.0' : _api,
-                    '1.5' : _api,
-                    'dev': _api,},
-            'jswidget' :
-                    {'tags':None}
-            },
-        }
-
-    # elegant solution?
-    # build a dict full of possible paths. it's a huge tree.
-    # blindly drop in each jiggy, and if you get a keyerror, it's invalid!
-
-    # DEBUG THIS
-    valid_paths = []
-    invalid_paths = []
-    for path in paths:
-        valid = True
-        for i in range(len(path)):
-            nxt = path[i]
-            vld = validation
-            try:
-                print vld[nxt]
-                print
-                if vld[nxt] is None:
-                    break
-                else:
-                    vld = vld[nxt]
-            except:
-                valid = False
-                break
-        if valid:
-            valid_paths.append(path)
-        else:
-            invalid_paths.append(path)
-
-    print "valid: %d" % len(valid_paths)
-    print "invalid: %d" % len(invalid_paths)
-    print "=========="
-    for i in range(100):
-        print '/'.join(invalid_paths[i])
-
+def validate_paths(paths):
     # do nothing for now
     return paths
 
