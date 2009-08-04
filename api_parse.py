@@ -56,11 +56,14 @@ def parse_file(name):
     return data
 
 def parse():
-    data = map(parse_file, ["a8-api.creativecommons.org-access.log-20081003"]) #glob.glob('a8-*'))
+    data = map(parse_file, glob.glob('a8-*')) # "a8-api.creativecommons.org-access.log-20081003"]) #
     all_records = []
     for datum in data:
         all_records += datum
     return all_records
+
+def minimal_parse():
+    return [(x['datestr'], x['request-url']) for x in parse()]
 
 def process(records):
     return map(process_item, records)
@@ -75,7 +78,7 @@ if __name__ == '__main__':
     data = parse()
     parse_stop = time.time()
 
-    length = len(repr(data))
+    #length = len(repr(data))
 
     process_start = time.time()
     data = process(data)
@@ -83,5 +86,5 @@ if __name__ == '__main__':
 
     print "Parsing took %.2f seconds" % (parse_stop - parse_start)
     print "Processing took %.2f seconds" % (process_stop - process_start)
-    print "Length: %d" % length
+    #print "Length: %d" % length
     #print "Data representation is %d characters long" % len(repr(data))
