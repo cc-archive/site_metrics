@@ -5,6 +5,15 @@ import urlparse
 
 # TODO add ability to break output files by month or year
 
+class lazy_dict(dict):
+    """Dictionary to lazy-load pre-parsed log files."""
+    def __init__(self, **kwargs):
+        dict.__init__(self, **kwargs)
+        self._fns = glob.glob('paths*.gz')
+
+    def __getitem__(self, key):
+        pass
+
 def _parse_line(line): # grab the two fields from log files
     datestr = line[15:35] # hard code for speed
     urlstr = line.split('"',2)[1].split(' ')[1]
@@ -44,17 +53,20 @@ def dump(data):
             f.write('%s %s\n' % datum)
         f.close()
 
-def load():
+def load(): # TODO introduce lazy load evaluation
+    """Globs all pre-parsed gzipped log files, reads them in,
+    and makes them accessible as a dict of lists of two-tuples."""
+    #data = lazy_dict()
     fns = glob.glob('paths*.gz')
     data = dict()
     for name in fns:
-        ym = name[5:-3]
+        ym = name[5:-3] # Year and month in YYYYMM format
         f = gzip.open(name,'r')
         data[ym] = [tuple(line.split(' ')) for line in f.readlines()]
         f.close()
     return data
 
-def process(data):
+def process(data): # note this can't take the result of load() directly
     return [(datetime.strptime(datum[0], '%d/%b/%Y:%H:%M:%S'),
              urlparse.urlparse(datum[1]))
             for datum in data]
