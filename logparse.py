@@ -1,9 +1,7 @@
 import glob
+import gzip
 from datetime import datetime
 import urlparse
-
-# what level should date-filtering happen at?
-# probably the file level
 
 # TODO add ability to break output files by month or year
 
@@ -13,26 +11,48 @@ def _parse_line(line): # grab the two fields from log files
     return (datestr, urlstr)
 
 def _parse_file(name):
-    f = open(name, 'r')
+    f = gzip.open(name, 'r')
     data = map(_parse_line, f.readlines())
     f.close()
     return data
 
+def _group_filenames(filenames):
+    """Takes a list of file names, returns a dictionary of file names
+    broken up by year and month."""
+    grp = dict()
+    for n in filenames:
+        ym = n[n.rfind('\\')+1:-5] # year and month; TODO fix this in production
+        if not grp.has_key(ym):
+            grp[ym] = [n]
+        else:
+            grp[ym].append(n)
+    return grp
+
 def parse():
-    filenames = glob.glob('a8-*') # TODO more specificity
-    data = map(_parse_file, filenames)
-    data = reduce(lambda x,y: x + y, data, [])
+    filenames = glob.glob('logs/*.gz') # TODO fix in production
+    grouped_fns = _group_filenames(filenames)
+    data = dict()
+    for key, value in grouped_fns.items():
+        tmp = map(_parse_file, value)
+        data[key] = reduce(lambda x,y: x + y, tmp, [])
     return data
 
 def dump(data):
-    f = open('paths.txt','w')
-    for datum in data:
-        f.write('%s %s\n' % datum)
-    f.close()
+    for key, value in data.items():
+        f = gzip.open('paths%s.gz' % key, 'w')
+        for datum in value:
+            f.write('%s %s\n' % datum)
+        f.close()
 
 def load():
-    f = open('paths.txt','r')
-    return [tuple(line.split(' ')) for line in f.readlines()]
+    fns = glob.glob('paths*.gz')
+    data = dict()
+    for name in fns:
+        ym = name[5:-3]
+        f = gzip.open(name,'r')
+        data[ym] = [tuple(line.split(' ')) for line in f.readlines()]
+        f.close()
+    return data
 
 def process(data):
     return [(datetime.strptime(datum[0], '%d/%b/%Y:%H:%M:%S'),
@@ -61,7 +81,7 @@ if __name__ == '__main__':
     assert old_len == len(data)
     
     process_start = time.time()
-    data = process(data)
+    #data = process(data) # TODO fix this
     process_stop = time.time()
 
     print "Parsing: %.2f seconds" % (parse_stop - parse_start)
