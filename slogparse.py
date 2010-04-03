@@ -24,8 +24,6 @@ class LogfileStats:
         url = urlparse.urlparse(urlstr)
         # path and query are the items of interest
 
-        # TODO: fiddle with it here, get some data to come out
-        # TODO: then write graphers for this data!
         path = url.path
         qdict = self._query2dict(url.query)
 
@@ -60,7 +58,7 @@ class LogfileStats:
         if qlist.count('') > 1:
             raise Exception('Expected no more than one empty string' +
                             ' creating query dictionary')
-        elif qlist.count('') == 1:
+        elif qlist.count('') == 1: # TODO better way to handle this?
             qlist.remove('')
         
         for item in qlist:
@@ -108,8 +106,8 @@ def read_stats():
     f = open('versiondata.csv','r')
     reader = csv.reader(f)
 
-    reader.readrow() # first line
-    return reader.readrows() # a cop out? maybe.
+    reader.next() # first line
+    return [line for line in reader] # maybe a copout
 
 
 if __name__ == '__main__':
