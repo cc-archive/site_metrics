@@ -9,8 +9,80 @@ File name is short for "serial log parse". Instead of trying to parse all the lo
 The parser will use a listener-type design pattern to register "statistics" objects that take care of calculating and reporting statistics. This way the log parser doesn't have to change every time we add new reporting.
 '''
 
+class LogfileParser:
+    '''Takes a list of file names to parse. User then registers a number of 
+       StatsAggregator objects, which will accept one line at a time from
+       the log files, along with an identifier of which file / day / time
+       period the line corresponds to. 
+    '''
+
+    def __init__(self, log_filenames):
+        assert hasattr(log_filenames, '__iter__')
+        # make sure you can iterate over the filenames
+
+        self.aggregators = []
+        self.log_fns = log_filenames
+
+    def register(self, statsaggregator):
+        self.aggregators.append(statsaggregator)
+
+    def create_id_from_filename(self, filename):
+        '''Helper function: take a filename and return an identifier
+           derived from that filename. Highly contingent on getting a
+           filename in the right format.'''
+        ymdstr = fn.split('/')[1].split('.')[0] # string format YYYYMMDD
+        year = ymdstr[:4]
+        month = ymdstr[4:6]
+        day = ymdstr[-2:]
+        return '%(year)s-%(month)s-%(day)s' % locals()
+
+    def _query2dict(self, query):
+        '''Helper function to turn the 'query' field returned by urlparse
+        into a dictionary'''
+        qdict = dict()
+        if query == '':
+            return qdict
+        qlist = query.split('&')
+        if qlist.count('') > 1:
+            raise Exception('Expected no more than one empty string' +
+                            ' creating query dictionary')
+        elif qlist.count('') == 1: # TODO better way to handle this?
+            qlist.remove('')
+        
+        for item in qlist:
+            kv = item.split('=')
+            if len(kv) != 2: # due to weird query string. possibly invalid.
+                qdict[kv[0]] = None
+            else:
+                qdict[kv[0]] = kv[1]
+
+        return qdict
+
+    def process_line(self, line):
+        urlstr = line.split('"',2)[1].split(' ')[1] # url the client asked for
+        url = urlparse.urlparse(urlstr)
+        # path and query are the items of interest
+
+        path = url.path
+        qdict = self._query2dict(url.query)
+
+        print locals() #DEBUG
+        return locals() # this is awesome but watch for bugs
+
+    def run(self):
+        for fn in self.log_fns:
+            id = self.create_id_from_filename(fn)
+
+            with open(fn, 'r') as f:
+                for line in f.readlines():
+                    linedata = self.process_line(line)
+                    for ag in self.aggregators:
+                        ag.accept(linedata, id)
+
 class LogfileStats: 
-    '''LogfileStats takes care of gathering all the important information
+    '''This guy is DEPRECATED. We are just using him for parts.
+
+       LogfileStats takes care of gathering all the important information
        in a log file, by accepting one line at a time through the parse_line
        method. 
        Reporting formats aren't standardized yet.
@@ -29,17 +101,6 @@ class LogfileStats:
 
         path = url.path
         qdict = self._query2dict(url.query)
-
-        ### Record version information
-        datum['version'] = None
-        try:
-            v = path.split('/')[2] # grab the version
-            if v not in ('1.0','1.5','dev'):
-                v = 'invalid'
-            datum['version'] = v
-        except IndexError:
-            # version information wasn't there
-            datum['version'] = 'nonexistent'
 
         ### Record validation information
         datum['valid'] = path in self._valid_urls
@@ -108,38 +169,8 @@ class LogfileStats:
         return valid_urls
 
 
-    def validate(self):
-        '''Take a url (path) string, without the query string,
-        and validate it against possible CC API calls.'''
-        pass
 
-    def _query2dict(self, query):
-        '''Helper function to turn the 'query' field returned by urlparse
-        into a dictionary'''
-        qdict = dict()
-        if query == '':
-            return qdict
-        qlist = query.split('&')
-        if qlist.count('') > 1:
-            raise Exception('Expected no more than one empty string' +
-                            ' creating query dictionary')
-        elif qlist.count('') == 1: # TODO better way to handle this?
-            qlist.remove('')
-        
-        for item in qlist:
-            kv = item.split('=')
-            if len(kv) != 2: # due to weird query string. possibly invalid.
-                qdict[kv[0]] = None
-            else:
-                qdict[kv[0]] = kv[1]
-
-        return qdict
-
-    def _name_from_fn(self, fn):
-        ymdstr = fn.split('/')[1].split('.')[0] # string format YYYYMMDD
-        return '%(year)s-%(month)s-%(day)s' % {'year':ymdstr[:4],
-                                               'month':ymdstr[4:6],
-                                               'day':ymdstr[-2:]}
+''' These functions are probably DEPRECATED.'''
 
 def parse_logfiles():
     stats = [] # a list of LogfileStats
@@ -190,7 +221,5 @@ def read_stats():
 
 
 if __name__ == '__main__':
-    stats = parse_logfiles()
-    for guy in stats:
-        print guy._name
-    write_stats(stats)
+    # TODO maybe some unit tests here
+    lfp = LogfileParser(['foo.txt','bar.txt'])
