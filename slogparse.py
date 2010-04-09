@@ -4,7 +4,9 @@ import urlparse
 import csv
 
 '''
-File name is short for "serial log parse". Instead of trying to parse all the logs at once, analyze and collect data on the first pass. This way should be faster and use much less memory. The downside is that adding new charts will necessarily change this parser.
+File name is short for "serial log parse". Instead of trying to parse all the logs at once, analyze and collect data on the first pass. This way should be faster and use much less memory.
+
+The parser will use a listener-type design pattern to register "statistics" objects that take care of calculating and reporting statistics. This way the log parser doesn't have to change every time we add new reporting.
 '''
 
 class LogfileStats: 
@@ -17,6 +19,7 @@ class LogfileStats:
         self._name = self._name_from_fn(fn)
         self._raw_data = []
         self._processed_data = {}
+        self._valid_urls = set(self._build_valid_urls())
 
     def parse_line(self, line):
         datum = dict() # all the information about this particular line
@@ -38,6 +41,13 @@ class LogfileStats:
             # version information wasn't there
             datum['version'] = 'nonexistent'
 
+        ### Record validation information
+        datum['valid'] = path in self._valid_urls
+
+        # debugging
+        #if not datum['valid'] and 'dev' in path:
+        #    print urlstr
+
         self._raw_data.append(datum)
 
     def finalize(self):
@@ -47,6 +57,61 @@ class LogfileStats:
         for d in self._raw_data:
             vinfo[d['version']] += 1
         self._processed_data['versions'] = vinfo
+ 
+        ### Tally valid url information
+        self._processed_data['valid'] = len(filter(lambda x: x['valid'], 
+                                            self._raw_data))
+        self._processed_data['invalid'] = len(filter(lambda x: not x['valid'],
+                                              self._raw_data))
+
+    # TODO refactor this guy with builder functions
+    def _build_valid_urls(self):
+        '''Create and return a list of 'valid' urls that can
+        be called on the CC API.'''
+
+        # TODO is it cheaper to extend lists or add them?
+        preurls = list()
+        classes = ('standard', 'publicdomain', 'recombo')
+        r = 'rest'
+
+        # 1.0 api calls
+        b = '1.0'
+        preurls.append([r, b])
+        preurls += [ ['', r, b, 'license', c] for c in classes]
+        preurls += [ ['', r, b, 'license', c, 'issue'] for c in classes]
+
+        # 1.5 api calls
+        b = '1.5'
+        preurls.append(['', r, b])
+        preurls += [ ['', r, b, s] for s in ('locale', 'classes')]
+        preurls += [ ['', r, b, 'license', c] for c in classes]
+        preurls += [ ['', r, b, 'license', c, 'issue'] for c in classes]
+        preurls += [ ['', r, b, 'license', c, 'get'] for c in classes]
+        preurls.append(['', r, b, 'details'])
+        preurls.append(['', r, b, 'simple', 'chooser'])
+        preurls.append(['', r, b, 'support', 'jurisdictions'])
+
+        # dev api calls
+        b = 'dev'
+        # ...
+        preurls.append(['', r, b, 'support', 'jurisdictions'])
+        preurls.append(['', r, b, 'support', 'jurisdictions.js'])
+
+        def add_space(*ls): # there's got to be a better way
+            nl = list(ls)
+            nl.append('')
+            return nl
+
+        preurls += [add_space(*p) for p in preurls]
+        valid_urls = ['/'.join(p) for p in preurls]
+
+        return valid_urls
+
+
+    def validate(self):
+        '''Take a url (path) string, without the query string,
+        and validate it against possible CC API calls.'''
+        pass
 
     def _query2dict(self, query):
         '''Helper function to turn the 'query' field returned by urlparse
@@ -91,16 +156,30 @@ def parse_logfiles():
 
 def write_stats(stats):
     # assume stats is sorted
-    f = open('versiondata.csv','w')
-    writer = csv.writer(f)
 
-    writer.writerow(['date','nonexistent','invalid','1.0','1.5','dev'])
-    for stat in stats:
-        vs = stat._processed_data['versions']
-        row = [stat._name, vs['nonexistent'], vs['invalid'],
-                           vs['1.0'], vs['1.5'], vs['dev']]
-        writer.writerow(row)
-    f.close()
+    ### Write version information
+    with open('versiondata.csv','w') as f:
+        writer = csv.writer(f)
+
+        writer.writerow(['date','nonexistent','invalid','1.0','1.5','dev'])
+        for stat in stats:
+            vs = stat._processed_data['versions']
+            row = [stat._name, vs['nonexistent'], vs['invalid'],
+                               vs['1.0'], vs['1.5'], vs['dev']]
+            writer.writerow(row)
+        f.close()
+
+    ### Write valid urls information
+    with open('validdata.csv','w') as f:
+        writer = csv.writer(f)
+
+        writer.writerow(['date','valid','invalid'])
+        for stat in stats:
+            vd = stat._processed_data['valid']
+            ivd = stat._processed_data['invalid']
+            writer.writerow([stat._name, vd, ivd])
+        f.close()
+   
 
 def read_stats():
     f = open('versiondata.csv','r')
