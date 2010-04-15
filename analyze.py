@@ -7,10 +7,12 @@ if __name__ == '__main__':
     lp = slogparse.LogfileParser(fns)
 
     aggs = list()
-    aggs.append(sa.VersionStatsAggregator())
+    aggs.append(sa.VersionAggregator())
     aggs.append(sa.ValidationAggregator())
     lp.register(aggs)
 
     lp.run()
 
-    print ag
+    for ct, ag in enumerate(aggs):
+        ag.showgraph()
+        ag.printgraph('%(ct)i.png' % locals())

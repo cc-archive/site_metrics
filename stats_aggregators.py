@@ -9,8 +9,9 @@ the LogParser, and an identifier string.
 Reporting methods are yet to be standardized.
 '''
 
+import pylab
 
-class VersionStatsAggregator:
+class VersionAggregator:
     '''Statistics about what CC API verison is being used.
 
     There are three versions (1.0, 1.5, dev), and an 'invalid' entry for
@@ -35,6 +36,34 @@ class VersionStatsAggregator:
     def _make_blank_version_dict(self):
         bvd = {'1.0':0, '1.5':0, 'dev':0, 'invalid':0}
         return bvd
+
+    def makegraph(self):
+        oneoh, onefive, dev, invalid = [list() for i in range(4)]
+        for key in sorted(self.stats):
+            dval = self.stats[key]
+            oneoh.append(dval['1.0'])
+            onefive.append(dval['1.5'])
+            dev.append(dval['dev'])
+            invalid.append(dval['invalid'])
+        x = range(len(self.stats))
+            
+        pylab.plot(x, oneoh, label='1.0')
+        pylab.plot(x, onefive, label='1.5')
+        pylab.plot(x, dev, label='dev')
+        pylab.plot(x, invalid, label='invalid')
+        pylab.legend(loc='best')
+
+    def showgraph(self):
+        self.makegraph()
+        pylab.show()
+
+        # TODO does this do anything?
+        pylab.clf()
+        pylab.close()
+
+    def printgraph(self, filename):
+        self.makegraph()
+        pylab.savefig(filename)
 
 
 class ValidationAggregator:
@@ -95,3 +124,9 @@ class ValidationAggregator:
         valid_urls = ['/'.join(p) for p in preurls]
 
         return set(valid_urls)
+
+    def showgraph(self):
+        print 'Validation: Show graph not yet implemented'
+
+    def printgraph(self, filename):
+        print 'Validation: Print graph not yet implemented'
