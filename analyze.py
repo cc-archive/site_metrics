@@ -6,8 +6,10 @@ if __name__ == '__main__':
     fns = glob.glob('logs/*.gz')
     lp = slogparse.LogfileParser(fns)
 
-    ag = sa.VersionStatsAggregator()
-    lp.register(ag)
+    aggs = list()
+    aggs.append(sa.VersionStatsAggregator())
+    aggs.append(sa.ValidationAggregator())
+    lp.register(aggs)
 
     lp.run()
 
