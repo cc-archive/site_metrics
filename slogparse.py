@@ -16,12 +16,13 @@ class LogfileParser:
        period the line corresponds to. 
     '''
 
-    def __init__(self, log_filenames):
+    def __init__(self, log_filenames, gzip=True):
         assert hasattr(log_filenames, '__iter__')
         # make sure you can iterate over the filenames
 
         self.aggregators = []
         self.log_fns = log_filenames
+        self.gzipped_files = gzip
 
     def register(self, statsaggregator):
         self.aggregators.append(statsaggregator)
@@ -30,7 +31,7 @@ class LogfileParser:
         '''Helper function: take a filename and return an identifier
            derived from that filename. Highly contingent on getting a
            filename in the right format.'''
-        ymdstr = fn.split('/')[1].split('.')[0] # string format YYYYMMDD
+        ymdstr = filename.split('/')[1].split('.')[0] # string format YYYYMMDD
         year = ymdstr[:4]
         month = ymdstr[4:6]
         day = ymdstr[-2:]
@@ -66,18 +67,20 @@ class LogfileParser:
         path = url.path
         qdict = self._query2dict(url.query)
 
-        print locals() #DEBUG
+        #print locals() #DEBUG
         return locals() # this is awesome but watch for bugs
 
     def run(self):
         for fn in self.log_fns:
             id = self.create_id_from_filename(fn)
 
-            with open(fn, 'r') as f:
-                for line in f.readlines():
-                    linedata = self.process_line(line)
-                    for ag in self.aggregators:
-                        ag.accept(linedata, id)
+            if self.gzipped_files:
+                open = gzip.open # shadows 'open', local scope only i hope
+            f = open(fn, 'r')
+            for line in f.readlines():
+                linedata = self.process_line(line)
+                for ag in self.aggregators:
+                    ag.accept(linedata, id)
 
 class LogfileStats: 
     '''This guy is DEPRECATED. We are just using him for parts.
