@@ -10,8 +10,25 @@ Reporting methods are yet to be standardized.
 '''
 
 import pylab
+import pickle
 
-class VersionAggregator:
+class StatsAggregator:
+
+    def save(self, filename=None):
+        if filename is None:
+            filename = '%s.txt' % self.name
+        print filename
+        with open(filename, 'w') as f:
+            pickle.dump(self.stats, f)
+
+    def load(self, filename=None):
+        if filename is None:
+            filename = '%s.txt' % self.name
+        with open(filename, 'r') as f:
+            self.stats = pickle.load(f)
+
+
+class VersionAggregator(StatsAggregator):
     '''Statistics about what CC API verison is being used.
 
     There are three versions (1.0, 1.5, dev), and an 'invalid' entry for
@@ -20,6 +37,7 @@ class VersionAggregator:
 
     def __init__(self):
         self.stats = dict()
+        self.name = 'versionstats'
 
     def accept(self, linedata, id):
         vdata = self.stats.setdefault(id, self._make_blank_version_dict())
@@ -66,12 +84,13 @@ class VersionAggregator:
         pylab.savefig(filename)
 
 
-class ValidationAggregator:
+class ValidationAggregator(StatsAggregator):
     '''Statistics about how many queries are invalid.'''
 
     def __init__(self):
         self.stats = dict()
         self.valid_urls = self.build_valid_urls()
+        self.name = 'validstats'
 
     def accept(self, linedata, id):
         vdata = self.stats.setdefault(id, {'valid':0, 'invalid':0})
