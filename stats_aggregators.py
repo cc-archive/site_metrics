@@ -1,5 +1,4 @@
-'''
-Classes for aggregating data into statistics about the log files.
+'''Classes for aggregating data into statistics about the log files.
 Each class takes care of tabulating, calculating, and then reporting
 its own statistics.
 
@@ -26,6 +25,31 @@ class StatsAggregator:
             filename = '%s.txt' % self.name
         with open(filename, 'r') as f:
             self.stats = pickle.load(f)
+
+
+class MetadataAggregator(StatsAggregator):
+    '''Statistics about metadata usage.'''
+
+    def __init__(self):
+        self.stats = dict()
+        self.name = 'metadatastats'
+
+    def accept(self, linedata, id):
+        vdata = self.stats.setdefault(id, {'has':0, 'hasnt':0, 'count':dict()})
+        qdict = linedata['qdict']
+
+        if len(qdict) == 0:
+            vdata['hasnt'] += 1
+        else:
+            vdata['has'] += 1
+            for k in qdict:
+                vdata['count'].setdefault(k, 0)
+                vdata['count'][k] += 1
+
+    def showgraph(self):
+        import pprint
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(self.stats)
 
 
 class VersionAggregator(StatsAggregator):
@@ -149,3 +173,5 @@ class ValidationAggregator(StatsAggregator):
 
     def printgraph(self, filename):
         print 'Validation: Print graph not yet implemented'
+
+
