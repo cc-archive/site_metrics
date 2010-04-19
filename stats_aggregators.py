@@ -10,6 +10,7 @@ Reporting methods are yet to be standardized.
 
 import pylab
 import pickle
+import csv
 
 class StatsAggregator:
 
@@ -25,6 +26,22 @@ class StatsAggregator:
             filename = '%s.txt' % self.name
         with open(filename, 'r') as f:
             self.stats = pickle.load(f)
+
+    def save_csv(self, filename):
+        f = open(filename, 'w')
+        w = csv.writer(f)
+
+        data = self.stats.items()
+        titles = sorted(data[0][1].keys()) # assume all 2nd-level keys the same
+        titles.insert(0, 'date')
+
+        w.writerow(titles)
+        for k, v in data:
+            row = [v[t] for t in titles if t != 'date']
+            row.insert(0, k)
+            w.writerow(row)
+
+        f.close()
 
 
 class MetadataAggregator(StatsAggregator):
@@ -46,7 +63,7 @@ class MetadataAggregator(StatsAggregator):
                 vdata['count'].setdefault(k, 0)
                 vdata['count'][k] += 1
 
-    def showgraph(self):
+    def printdata(self):
         import pprint
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(self.stats)
@@ -78,34 +95,6 @@ class VersionAggregator(StatsAggregator):
     def _make_blank_version_dict(self):
         bvd = {'1.0':0, '1.5':0, 'dev':0, 'invalid':0}
         return bvd
-
-    def makegraph(self):
-        oneoh, onefive, dev, invalid = [list() for i in range(4)]
-        for key in sorted(self.stats):
-            dval = self.stats[key]
-            oneoh.append(dval['1.0'])
-            onefive.append(dval['1.5'])
-            dev.append(dval['dev'])
-            invalid.append(dval['invalid'])
-        x = range(len(self.stats))
-            
-        pylab.plot(x, oneoh, label='1.0')
-        pylab.plot(x, onefive, label='1.5')
-        pylab.plot(x, dev, label='dev')
-        pylab.plot(x, invalid, label='invalid')
-        pylab.legend(loc='best')
-
-    def showgraph(self):
-        self.makegraph()
-        pylab.show()
-
-        # TODO does this do anything?
-        pylab.clf()
-        pylab.close()
-
-    def printgraph(self, filename):
-        self.makegraph()
-        pylab.savefig(filename)
 
 
 class ValidationAggregator(StatsAggregator):
@@ -167,11 +156,3 @@ class ValidationAggregator(StatsAggregator):
         valid_urls = ['/'.join(p) for p in preurls]
 
         return set(valid_urls)
-
-    def showgraph(self):
-        print 'Validation: Show graph not yet implemented'
-
-    def printgraph(self, filename):
-        print 'Validation: Print graph not yet implemented'
-
-

@@ -13,10 +13,8 @@ def testAll():
 
     lp.run()
 
-    for ct, ag in enumerate(aggs):
-        ag.save() # testing
-        ag.showgraph()
-        ag.printgraph('%(ct)i.png' % locals())
+    for i, ag in enumerate(aggs):
+        ag.save_csv('%i.csv' % i)
 
 def testMetadata():
     fns = glob.glob('logs/*.gz')
@@ -27,10 +25,7 @@ def testMetadata():
 
     lp.run()
 
-    ag.save()
-    ag.showgraph()
-
 
 if __name__ == '__main__':
-    #testAllAggregators()
-    testMetadata()
+    testAll()
+    #testMetadata()
